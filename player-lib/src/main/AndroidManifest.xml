@@ -22,16 +22,21 @@ limitations under the License. -->
       android:icon="@mipmap/ic_launcher"
       android:label="@string/app_name"
       android:supportsRtl="true">
+
     <activity
-        android:name="com.example.exoplayer.PlayerActivity"
-        android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
-        android:label="@string/player_activity_name"
+        android:name="com.example.exoplayer.MainActivity"
         android:theme="@style/PlayerTheme">
       <intent-filter>
         <action android:name="android.intent.action.MAIN"/>
         <category android:name="android.intent.category.LAUNCHER"/>
       </intent-filter>
     </activity>
+
+    <activity
+        android:name="com.example.exoplayer.PlayerActivity"
+        android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
+        android:label="@string/player_activity_name"
+        android:theme="@style/PlayerTheme"/>
   </application>
 
 </manifest>

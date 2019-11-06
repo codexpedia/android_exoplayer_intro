@@ -19,16 +19,20 @@ import android.annotation.SuppressLint
 import android.net.Uri
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.support.v7.app.AlertDialog
 import android.view.View
+import com.example.exoplayer.MainActivity.Companion.MEDIA_URI
 
 import com.google.android.exoplayer2.DefaultLoadControl
 import com.google.android.exoplayer2.DefaultRenderersFactory
 import com.google.android.exoplayer2.ExoPlayerFactory
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.audio.AudioRendererEventListener
+import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.MediaSource
 import com.google.android.exoplayer2.source.dash.DashMediaSource
 import com.google.android.exoplayer2.source.dash.DefaultDashChunkSource
+import com.google.android.exoplayer2.source.hls.HlsMediaSource
 import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.ui.PlayerView
@@ -37,14 +41,19 @@ import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
 import com.google.android.exoplayer2.util.Util
 import com.google.android.exoplayer2.video.VideoRendererEventListener
 
-
 /**
  * A fullscreen activity to play audio or video streams.
  */
 class PlayerActivity : AppCompatActivity() {
 
+    companion object {
+        private val BANDWIDTH_METER = DefaultBandwidthMeter()
+    }
+
     private var playerView: PlayerView? = null
-    private var player: SimpleExoPlayer? = null
+    private lateinit var player: SimpleExoPlayer
+
+    private var mediaUri = ""
 
     private var playbackPosition: Long = 0
     private var currentWindow: Int = 0
@@ -56,42 +65,57 @@ class PlayerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_player)
 
-        playerView = findViewById(R.id.video_view)
+        mediaUri = intent.getStringExtra(MEDIA_URI)
 
+        if (mediaUri.isEmpty()) {
+            AlertDialog.Builder(this)
+                    .setTitle("Invalid media uri")
+                    .setMessage("The uri is empty, please provide a valid media uri")
+                    .setPositiveButton("OK") { _, _ ->
+                        finish()
+                    }
+                    .show()
+        }
+
+        playerView = findViewById(R.id.video_view)
         componentListener = ComponentListener()
     }
 
     public override fun onStart() {
         super.onStart()
         if (Util.SDK_INT > 23) {
-            initializePlayer()
+            initializePlayer(mediaUri)
         }
     }
 
     public override fun onResume() {
         super.onResume()
         hideSystemUi()
-        if (Util.SDK_INT <= 23 || player == null) {
-            initializePlayer()
+        if (Util.SDK_INT <= 23 || !::player.isInitialized) {
+            initializePlayer(mediaUri)
         }
     }
 
     public override fun onPause() {
         super.onPause()
-        if (Util.SDK_INT <= 23) {
+        if (Util.SDK_INT <= 23 && ::player.isInitialized) {
             releasePlayer()
         }
     }
 
     public override fun onStop() {
         super.onStop()
-        if (Util.SDK_INT > 23) {
+        if (Util.SDK_INT > 23 && ::player.isInitialized) {
             releasePlayer()
         }
     }
 
-    private fun initializePlayer() {
-        if (player == null) {
+    private fun initializePlayer(uri: String) {
+        if (uri.isEmpty()) {
+            return
+        }
+
+        if (!::player.isInitialized) {
             // a factory to create an AdaptiveVideoTrackSelection
             val adaptiveTrackSelectionFactory = AdaptiveTrackSelection.Factory(BANDWIDTH_METER)
 
@@ -100,70 +124,48 @@ class PlayerActivity : AppCompatActivity() {
                     DefaultTrackSelector(adaptiveTrackSelectionFactory),
                     DefaultLoadControl())
 
-            player!!.addListener(componentListener)
-            player!!.addVideoDebugListener(componentListener as VideoRendererEventListener?)
-            player!!.addAudioDebugListener(componentListener as AudioRendererEventListener?)
+            player.addListener(componentListener)
+            player.addVideoDebugListener(componentListener as VideoRendererEventListener?)
+            player.addAudioDebugListener(componentListener as AudioRendererEventListener?)
         }
 
-        playerView!!.player = player
+        playerView?.player = player
 
-        player!!.playWhenReady = playWhenReady
-        player!!.seekTo(currentWindow, playbackPosition)
+        player.playWhenReady = playWhenReady
+        player.seekTo(currentWindow, playbackPosition)
 
-        val uri = Uri.parse(getString(R.string.media_url_dash))
-        val mediaSource = buildMediaSource(uri)
-        player!!.prepare(mediaSource, true, false)
+        val mediaSource = buildMediaSource(Uri.parse(uri))
+        player.prepare(mediaSource, true, false)
     }
 
     private fun releasePlayer() {
-        if (player != null) {
-            playbackPosition = player!!.currentPosition
-            currentWindow = player!!.currentWindowIndex
-            playWhenReady = player!!.playWhenReady
-            player!!.removeListener(componentListener)
-            player!!.setVideoListener(null)
-            player!!.removeVideoDebugListener(componentListener as VideoRendererEventListener?)
-            player!!.removeAudioDebugListener(componentListener as AudioRendererEventListener?)
-            player!!.release()
-            player = null
-        }
+        playbackPosition = player.currentPosition
+        currentWindow = player.currentWindowIndex
+        playWhenReady = player.playWhenReady
+        player.removeListener(componentListener)
+        player.setVideoListener(null)
+        player.removeVideoDebugListener(componentListener as VideoRendererEventListener?)
+        player.removeAudioDebugListener(componentListener as AudioRendererEventListener?)
+        player.release()
     }
-
-    //  private MediaSource buildMediaSource(Uri uri) {
-    //    return new ExtractorMediaSource.Factory(
-    //            new DefaultHttpDataSourceFactory("exoplayer-codelab")).
-    //            createMediaSource(uri);
-    //  }
-
-    //  private MediaSource buildMediaSource(Uri uri) {
-    //    // these are reused for both media sources we create below
-    //    DefaultExtractorsFactory extractorsFactory =
-    //            new DefaultExtractorsFactory();
-    //    DefaultHttpDataSourceFactory dataSourceFactory =
-    //            new DefaultHttpDataSourceFactory( "user-agent");
-    //
-    //    ExtractorMediaSource videoSource =
-    //            new ExtractorMediaSource.Factory(
-    //                    new DefaultHttpDataSourceFactory("exoplayer-codelab")).
-    //                    createMediaSource(uri);
-    //
-    //    Uri audioUri = Uri.parse(getString(R.string.media_url_mp3));
-    //    ExtractorMediaSource audioSource =
-    //            new ExtractorMediaSource.Factory(
-    //                    new DefaultHttpDataSourceFactory("exoplayer-codelab")).
-    //                    createMediaSource(audioUri);
-    //
-    //    return new ConcatenatingMediaSource(audioSource, videoSource);
-    //  }
 
     private fun buildMediaSource(uri: Uri): MediaSource {
-        val manifestDataSourceFactory = DefaultHttpDataSourceFactory("ua")
-        val dashChunkSourceFactory = DefaultDashChunkSource.Factory(
-                DefaultHttpDataSourceFactory("ua", BANDWIDTH_METER))
-        return DashMediaSource.Factory(dashChunkSourceFactory,
-                manifestDataSourceFactory).createMediaSource(uri)
-    }
 
+        val userAgent = "exoplayer-codelab"
+
+        if (uri.getLastPathSegment().contains("mp3") || uri.getLastPathSegment().contains("mp4")) {
+            return ExtractorMediaSource.Factory(DefaultHttpDataSourceFactory(userAgent))
+                    .createMediaSource(uri)
+        } else if (uri.getLastPathSegment().contains("m3u8")) {
+            return HlsMediaSource.Factory(DefaultHttpDataSourceFactory(userAgent))
+                    .createMediaSource(uri)
+        } else {
+            val dashChunkSourceFactory = DefaultDashChunkSource.Factory(
+                    DefaultHttpDataSourceFactory("ua", BANDWIDTH_METER))
+            val manifestDataSourceFactory = DefaultHttpDataSourceFactory(userAgent)
+            return DashMediaSource.Factory(dashChunkSourceFactory, manifestDataSourceFactory).createMediaSource(uri)
+        }
+    }
 
     @SuppressLint("InlinedApi")
     private fun hideSystemUi() {
@@ -173,11 +175,6 @@ class PlayerActivity : AppCompatActivity() {
                 or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                 or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                 or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION)
-    }
-
-    companion object {
-
-        private val BANDWIDTH_METER = DefaultBandwidthMeter()
     }
 
 }
