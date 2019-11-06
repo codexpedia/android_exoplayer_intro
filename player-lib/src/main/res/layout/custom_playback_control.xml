@@ -35,9 +35,9 @@
             android:tint="#FF00A6FF"
             style="@style/ExoMediaButton.Rewind"/>
 
-        <ImageButton android:id="@id/exo_shuffle"
-            android:tint="#FF00A6FF"
-            style="@style/ExoMediaButton.Shuffle"/>
+<!--        <ImageButton android:id="@id/exo_shuffle"-->
+<!--            android:tint="#FF00A6FF"-->
+<!--            style="@style/ExoMediaButton.Shuffle"/>-->
 
         <ImageButton android:id="@id/exo_repeat_toggle"
             android:tint="#FF00A6FF"

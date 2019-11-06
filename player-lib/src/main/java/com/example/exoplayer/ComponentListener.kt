@@ -1,15 +1,15 @@
 package com.example.exoplayer
 
 import android.util.Log
-import android.view.Surface
 
 import com.google.android.exoplayer2.Format
 import com.google.android.exoplayer2.Player
+import com.google.android.exoplayer2.analytics.AnalyticsListener
 import com.google.android.exoplayer2.audio.AudioRendererEventListener
 import com.google.android.exoplayer2.decoder.DecoderCounters
 import com.google.android.exoplayer2.video.VideoRendererEventListener
 
-class ComponentListener : Player.DefaultEventListener(), VideoRendererEventListener, AudioRendererEventListener {
+class ComponentListener : Player.EventListener, VideoRendererEventListener, AudioRendererEventListener, AnalyticsListener {
     private val TAG = "ComponentListener"
 
     override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
@@ -43,10 +43,6 @@ class ComponentListener : Player.DefaultEventListener(), VideoRendererEventListe
     }
 
     override fun onVideoSizeChanged(width: Int, height: Int, unappliedRotationDegrees: Int, pixelWidthHeightRatio: Float) {
-        // Do nothing.
-    }
-
-    override fun onRenderedFirstFrame(surface: Surface) {
         // Do nothing.
     }
 

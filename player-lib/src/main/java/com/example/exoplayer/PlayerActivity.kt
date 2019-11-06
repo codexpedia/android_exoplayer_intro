@@ -28,8 +28,8 @@ import com.google.android.exoplayer2.DefaultRenderersFactory
 import com.google.android.exoplayer2.ExoPlayerFactory
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.audio.AudioRendererEventListener
-import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.MediaSource
+import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.source.dash.DashMediaSource
 import com.google.android.exoplayer2.source.dash.DefaultDashChunkSource
 import com.google.android.exoplayer2.source.hls.HlsMediaSource
@@ -120,13 +120,14 @@ class PlayerActivity : AppCompatActivity() {
             val adaptiveTrackSelectionFactory = AdaptiveTrackSelection.Factory(BANDWIDTH_METER)
 
             player = ExoPlayerFactory.newSimpleInstance(
+                    this,
                     DefaultRenderersFactory(this),
                     DefaultTrackSelector(adaptiveTrackSelectionFactory),
                     DefaultLoadControl())
 
             player.addListener(componentListener)
-            player.addVideoDebugListener(componentListener as VideoRendererEventListener?)
-            player.addAudioDebugListener(componentListener as AudioRendererEventListener?)
+            player.addAnalyticsListener(componentListener)
+            player.addAnalyticsListener(componentListener)
         }
 
         playerView?.player = player
@@ -144,8 +145,8 @@ class PlayerActivity : AppCompatActivity() {
         playWhenReady = player.playWhenReady
         player.removeListener(componentListener)
         player.setVideoListener(null)
-        player.removeVideoDebugListener(componentListener as VideoRendererEventListener?)
-        player.removeAudioDebugListener(componentListener as AudioRendererEventListener?)
+        player.removeAnalyticsListener(componentListener)
+        player.removeAnalyticsListener(componentListener)
         player.release()
     }
 
@@ -154,7 +155,7 @@ class PlayerActivity : AppCompatActivity() {
         val userAgent = "exoplayer-codelab"
 
         if (uri.getLastPathSegment().contains("mp3") || uri.getLastPathSegment().contains("mp4")) {
-            return ExtractorMediaSource.Factory(DefaultHttpDataSourceFactory(userAgent))
+            return ProgressiveMediaSource.Factory(DefaultHttpDataSourceFactory(userAgent))
                     .createMediaSource(uri)
         } else if (uri.getLastPathSegment().contains("m3u8")) {
             return HlsMediaSource.Factory(DefaultHttpDataSourceFactory(userAgent))
